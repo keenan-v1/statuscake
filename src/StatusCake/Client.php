@@ -4,27 +4,26 @@ namespace StatusCake;
 
 use Exception;
 
-class Client
+class Client extends Call
 {
     /**
      * @var string
      */
     private $url = "https://www.statuscake.com/API";
-
+    
     /**
-     * @var string
+     * Set the API credentials
+     *
+     * @param string $username
+     * @param string $token
      */
-    private $username;
-
-    /**
-     * @var string
-     */
-    private $token;
-
     public function __construct($username, $token)
     {
-        $this->username = $username;
-        $this->token = $token;
+        $credentials = new Credentials();
+        $credentials->user = $username;
+        $credentials->token = $token;
+        
+        $this->registerCredentials($credentials);
     }
 
     /**
@@ -32,7 +31,6 @@ class Client
      */
     public function getTests()
     {
-
         $response = $this->callApi('Tests');
 
         // Check for success
@@ -45,7 +43,7 @@ class Client
 
         foreach ($response as $testData) {
 
-            $testItem = new Test();
+            $testItem = new Test($this->credentials);
 
             foreach ($testData as $key => $testDataValue) {
 
@@ -57,9 +55,14 @@ class Client
 
         return $testList;
     }
-
+    
     /**
      * updates or creates a test
+     *
+     * @param \StatusCake\Test $test
+     *
+     * @return mixed
+     * @throws \Exception
      */
     public function updateTest(Test $test)
     {
@@ -79,16 +82,27 @@ class Client
 
         // Check for success
         if (is_object($response) && ($response->Success == true)) {
-
+            
+            if(property_exists($response, 'InsertID'))
+            {
+                $test->contactID = $response->InsertID;
+                $test->registerCredentials($this->credentials);
+            }
+            
             return $response;
         }
 
-        throw new Exception('StatusCake API Error - Update failed.');
+        throw new Exception('StatusCake API Error - Test update failed.');
 
     }
 
     /**
-     * deletes a test
+     * Deletes a test
+     *
+     * @param \StatusCake\Test $test
+     *
+     * @return mixed
+     * @throws \Exception
      */
     public function deleteTest(Test $test)
     {
@@ -107,38 +121,112 @@ class Client
 
             return $response;
         }
-
-        throw new Exception('StatusCake API Error - Deleted failed.');
+    
+        throw new Exception('StatusCake API Error - Test deletion failed.');
     }
-
-
-    private function callApi($path, $method='GET', $data=null)
+    
+    /**
+     * Simply test the credentials.
+     *
+     * @return mixed
+     */
+    public function auth()
     {
-
-        // Create the CURL String
-        $ch = curl_init($this->url . '/' . $path);
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-
-        if ($data !== null) {
-            curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
+        return $this->callApi('Auth');
+    }
+    
+    /**
+     * Get the contact groups.
+     *
+     * @return array
+     * @throws \Exception
+     */
+    public function getContactGroups()
+    {
+        $groups = [];
+        
+        $data = $this->callApi('ContactGroups');
+    
+    
+        // Check for success
+        if (!is_array($data)) {
+        
+            throw new Exception('StatusCake API Error - No list response on getContactGroups.');
         }
-
-        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-            "Username: " . $this->username,
-            "API: " . $this->token
-        ));
-
-        $response = curl_exec($ch);
-
-        if (curl_errno($ch) !== 0) {
-            throw new Exception(curl_error($ch));
+        
+        // No groups found
+        if(count($data) == 0)
+            return [];
+        
+        // Loop over existing groups
+        foreach($data as $contactGroup)
+        {
+            // Initiate
+            $group = new ContactGroup();
+            
+            // Set attributes
+            foreach($contactGroup as $key => $val)
+            {
+                $group->{ucfirst($key)} = $val;
+            }
+            
+            // Add to list
+            $groups[] = $group;
         }
-
-        $response = json_decode($response);
-
-        return $response;
+        
+        return $groups;
+    }
+    
+    /**
+     * Create/update a contact group.
+     *
+     * @param \StatusCake\ContactGroup $contactGroup
+     *
+     * @return mixed
+     * @throws \Exception
+     */
+    public function updateContactGroup(ContactGroup $contactGroup)
+    {
+        $data = $contactGroup->toArray();
+        
+        $response = $this->callApi('ContactGroups/Update', 'PUT', $data);
+        
+        // Check for success
+        if (is_object($response) && ($response->Success == true)) {
+            
+            return $response;
+        }
+        
+        throw new Exception('StatusCake API Error - ContactGroup update failed.');
+    }
+    
+    /**
+     * Deletes a ContactGroup
+     *
+     * @param \StatusCake\ContactGroup $contactGroup
+     *
+     * @return mixed
+     * @throws \Exception
+     */
+    public function deleteContactGroup(ContactGroup $contactGroup)
+    {
+        if ($contactGroup->isNew() || (int)$contactGroup->contactID == 0) {
+            throw new Exception('Illegal Contact/ContactID.');
+        }
+        
+        $response = $this->callApi(
+            'ContactGroups/Update/?ContactID=' . (int)$contactGroup->contactID,
+            'DELETE'
+        );
+        
+        // Check for success
+        if (is_object($response) && ($response->Success == true)) {
+            
+            return $response;
+        }
+        
+        throw new Exception('StatusCake API Error - ContactGroup deletion failed.');
     }
 
+    
 }
