@@ -1,15 +1,20 @@
 {
-    "name":             "basilicom/statuscake",
+    "name":             "happydemon/statuscake",
     "description":      "Interface for StatusCake API",
     "keywords":         ["monitoring", "api"],
-    "homepage":         "http://basilicom.de",
+    "homepage":         "https://github.com/happyDemon/statuscake",
     "license":          "MIT",
     "authors": [
-        {
-            "name":         "Christoph Luehr",
-            "email":        "christoph.luehr@basilicom.de",
-            "role":         "Head of Devlopment"
-        }
+      {
+        "name":         "Maxim Kerstens",
+        "email":        "maxim@happydemon.xyz",
+        "role":         "Developer"
+      },
+      {
+        "name":         "Christoph Luehr",
+        "email":        "christoph.luehr@basilicom.de",
+        "role":         "Legacy developer"
+      }
     ],
     "require": {
         "php": ">=5.3.3"
