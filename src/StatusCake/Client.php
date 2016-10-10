@@ -126,13 +126,44 @@ class Client extends Call
     }
     
     /**
+     * Return user info
+     *
+     * @return mixed
+     */
+    public function account()
+    {
+        try {
+            $response = $this->callApi('Auth');
+        
+            if(is_object($response) && $response->Success)
+            {
+                return $response->Details;
+            }
+    
+            throw new Exception('StatusCake API Error - Account authentication failed.');
+        }
+        catch(Exception $e)
+        {
+            return false;
+        }
+    }
+    
+    /**
      * Simply test the credentials.
      *
      * @return mixed
      */
-    public function auth()
+    public function validAccount()
     {
-        return $this->callApi('Auth');
+        try {
+            $response = $this->account();
+            
+            return is_object($response);
+        }
+        catch(Exception $e)
+        {
+            return false;
+        }
     }
     
     /**
