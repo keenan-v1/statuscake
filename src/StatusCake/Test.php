@@ -2,6 +2,8 @@
 
 namespace StatusCake;
 
+use Exception;
+
 class Test extends Call
 {
     const STATUS_UNKNOWN = null;
@@ -199,5 +201,27 @@ class Test extends Call
         }
     
         throw new Exception('StatusCake API Error - Test Alerts retrieval failed.');
+    }
+
+    /**
+     * Fetch test detailed test data
+     *
+     * @return $this
+     * @throws Exception
+     */
+    public function getDetailedData()
+    {
+        $response = $this->callApi('Tests/Details?TestID='.$this->testID, 'GET');
+
+        if (!is_object($response))
+        {
+            throw new Exception('StatusCake API Error - Test Alerts retrieval failed.');
+        }
+
+        foreach ($response as $key => $testDataValue) {
+            $this->{lcfirst($key)} = $testDataValue;
+        }
+
+        return $this;
     }
 }
