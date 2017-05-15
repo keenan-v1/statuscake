@@ -11,7 +11,11 @@ namespace StatusCake;
 
 class Call
 {
-    
+    /**
+     * @var string
+     */
+    protected $url = "https://www.statuscake.com/API";
+
     protected $credentials;
     
     public function registerCredentials(Credentials $credentials)
